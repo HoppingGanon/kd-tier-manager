@@ -1,0 +1,964 @@
+{{define "menu"}}
+<html>
+  <head>
+    <title>
+      TierReviews 管理コンソール
+    </title>
+
+    <!-- vueおよびvuetify-->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+  
+  </head>
+  <body>
+    <style>
+      .console {
+        width: 100%;
+        height: 480px;
+        color: white;
+        word-wrap: break-word;
+        overflow: hidden visible;
+      }
+    </style>
+    <div id="app"><v-app><v-main>
+      <v-dialog v-model="building" :persistent="false">
+        <v-card>
+          <v-card-title>
+            ビルド中です...
+          </v-card-title>
+        </v-card>
+      </v-dialog>
+
+      <v-container>
+        <v-card>
+          <v-toolbar dark color="green">
+            <v-card-title class="font-weight-bold">TierReviews管理コンソール</v-card-title>
+            <v-spacer></v-spacer>
+            <div style="cursor: pointer" @click="logout">
+              ログアウト
+            </div>
+            <template v-slot:extension>
+              <v-tabs
+                v-model="tab"
+              >
+                <v-tabs-slider color="green darken-4"></v-tabs-slider>
+      
+                <v-tab>サーバー情報</v-tab>
+                <v-tab>オペレーション</v-tab>
+                <v-tab>アプリ操作ログ</v-tab>
+                <v-tab>アプリエラーログ</v-tab>
+                <v-tab>通知</v-tab>
+              </v-tabs>
+            </template>
+          </v-toolbar>
+
+          <v-tabs-items v-model="tab">
+            <v-tab-item>
+              <v-container fluid>
+                <v-row>
+                  <v-col>
+                    <span class="text-h6 font-weight-bold">
+                      サーバー情報
+                    </span>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col cols="12" sm="12" md="12" lg="6" xl="6">
+                    サーバー状態
+                    <v-container fluid class="ma-0 pa-1">
+                      <v-row>
+                        <v-col class="font-weight-bold">
+                          メモリ
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col>
+                          <v-slider v-model="memUsed" :min="0" :max="memTotal" :readonly="true">
+                          </v-slider>
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col cols="12" sm="12" md="12" lg="6" xl="6">
+                          使用量(MB) : <span v-text="memUsed"></span>MB / <span v-text="memTotal"></span>MB
+                        </v-col>
+                        <v-col cols="12" sm="12" md="12" lg="6" xl="6">
+                          使用率(%) : <span v-text="memRate"></span>%
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col class="font-weight-bold">
+                          ストレージ
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col>
+                          <v-slider v-model="stUsed" :min="0" :max="stTotal" :readonly="true">
+                          </v-slider>
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col cols="12" sm="12" md="12" lg="6" xl="6">
+                          使用量(GB) : <span v-text="stUsed"></span>GB / <span v-text="stTotal"></span>GB
+                        </v-col>
+                        <v-col cols="12" sm="12" md="12" lg="6" xl="6">
+                          使用率(%) : <span v-text="stRate"></span>%
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col>
+                          <v-divider></v-divider>
+                        </v-col>
+                      </v-row>
+                    </v-container>
+                  </v-col>
+                  <v-col cols="12" sm="12" md="12" lg="6" xl="6">
+                    <v-container fliod class="ma-0 pa-0">
+                      <v-row>
+                        <v-col class="d-flex">
+                          <v-col class="font-weight-bold">
+                            ログ
+                          </v-col>
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col class="d-flex">
+                          <v-select v-model="logSel" :items="logItems" label="表示ログ"></v-select>
+                          <v-btn class="ml-2" @click="clickGetLog">ログを取得</v-btn>
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col>
+                          <v-card class="console text-caption pa-1" style="border: 1px solid gray;">
+                            <div v-for="line, i in logConsole" :key="i">
+                              <span v-text="line.text" :style="line.style"></span><br>
+                            </div>
+                          </v-card>
+                        </v-col>
+                      </v-row>
+                    </v-container>
+                  </v-col>
+                </v-row>
+              </v-container>
+            </v-tab-item>
+
+            <v-tab-item>
+              <v-container fluid>
+                <v-row>
+                  <v-col>
+                    <span class="text-h6 font-weight-bold">
+                      オペレーション
+                    </span>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col cols="12" sm="12" md="12" lg="6" xl="6">
+                    <v-container fluid class="ma-0 pa-1">
+                      <v-row>
+                        <v-col class="font-weight-bold">
+                          管理サーバー(<span v-text="managerBuild"></span>)
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col cols="12" sm="12" md="12" lg="6" xl="6">
+                          <v-btn @click="pull" width="100%" :disabled="disabled || frontStatus == 'active' || frontStatus == 'none'">
+                            ソースコードの更新
+                          </v-btn>
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col class="font-weight-bold">
+                          フロントエンド(<span v-text="frontBuild"></span>)
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col class="d-flex align-center" cols="12" sm="12" md="12" lg="6" xl="6">
+                          状態：
+                          <div v-if="frontStatus == 'active'" class="d-flex align-center" cols="12" sm="12" md="12" lg="6" xl="6">
+                            <v-avatar class="mr-2" color="green">
+                              <v-icon style="color:white;">
+                                mdi-broadcast
+                              </v-icon>
+                            </v-avatar>
+                            稼働中
+                          </div>
+                          <div v-else-if="frontStatus == 'dead'" class="d-flex align-center" cols="12" sm="12" md="12" lg="6" xl="6">
+                            <v-avatar class="mr-2" color="orange">
+                              <v-icon style="color:white;">
+                                mdi-broadcast-off
+                              </v-icon>
+                            </v-avatar>
+                            停止中
+                          </div>
+                          <div v-else class="d-flex align-center" cols="12" sm="12" md="12" lg="6" xl="6">
+                            <v-avatar class="mr-2" color="red">
+                              <v-icon style="color:white;">
+                                mdi-help
+                              </v-icon>
+                            </v-avatar>
+                            不明
+                          </div>
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col cols="12" sm="12" md="12" lg="6" xl="6">
+                          <v-btn @click="startFront" width="100%" :disabled="disabled || frontStatus == 'active' || frontStatus == 'none'">
+                            起動
+                          </v-btn>
+                        </v-col>
+                        <v-col cols="12" sm="12" md="12" lg="6" xl="6">
+                          <v-btn @click="stopFront" width="100%" :disabled="disabled || frontStatus != 'active'">
+                            停止
+                          </v-btn>
+                        </v-col>
+                        <v-col cols="12" sm="12" md="12" lg="6" xl="6">
+                          <v-btn @click="buildFront" width="100%" :disabled="disabled || frontStatus == 'active' || frontStatus == 'none'">
+                            ビルド
+                          </v-btn>
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col>
+                          <v-divider></v-divider>
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col>
+                          <v-divider></v-divider>
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col class="font-weight-bold">
+                          バックエンド(<span v-text="backBuild"></span>)
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col class="d-flex align-center" cols="12" sm="12" md="12" lg="6" xl="6">
+                          状態：
+                          <div v-if="backStatus == 'active'" class="d-flex align-center" cols="12" sm="12" md="12" lg="6" xl="6">
+                            <v-avatar class="mr-2" color="green">
+                              <v-icon style="color:white;">
+                                mdi-broadcast
+                              </v-icon>
+                            </v-avatar>
+                            稼働中
+                          </div>
+                          <div v-else-if="backStatus == 'dead'" class="d-flex align-center" cols="12" sm="12" md="12" lg="6" xl="6">
+                            <v-avatar class="mr-2" color="orange">
+                              <v-icon style="color:white;">
+                                mdi-broadcast-off
+                              </v-icon>
+                            </v-avatar>
+                            停止中
+                          </div>
+                          <div v-else class="d-flex align-center" cols="12" sm="12" md="12" lg="6" xl="6">
+                            <v-avatar class="mr-2" color="red">
+                              <v-icon style="color:white;">
+                                mdi-help
+                              </v-icon>
+                            </v-avatar>
+                            不明
+                          </div>
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col cols="12" sm="12" md="12" lg="6" xl="6">
+                          <v-btn @click="startBack" width="100%" :disabled="disabled || backStatus == 'active' || backStatus == 'none'">
+                            起動
+                          </v-btn>
+                        </v-col>
+                        <v-col cols="12" sm="12" md="12" lg="6" xl="6">
+                          <v-btn @click="stopBack" width="100%" :disabled="disabled || backStatus != 'active'">
+                            停止
+                          </v-btn>
+                        </v-col>
+                        <v-col cols="12" sm="12" md="12" lg="6" xl="6">
+                          <v-btn @click="buildBack" width="100%" :disabled="disabled || backStatus != 'dead'">
+                            ビルド
+                          </v-btn>
+                        </v-col>
+                      </v-row>
+                      <v-row>
+                        <v-col>
+                          <v-divider></v-divider>
+                        </v-col>
+                      </v-row>
+                    </v-container>
+                  </v-col>
+                  <v-col cols="12" sm="12" md="12" lg="6" xl="6">
+                    <span class="font-weight-bold">
+                      コンソール
+                    </span>
+                    <v-switch v-model="ignoreMonitoring" label="状態監視の結果をコンソールに表示しない"></v-switch>
+                    <v-card id="consoleback" class="console text-caption pa-1" style="background-color: black;">
+                      <div v-for="line, i in consoleArray" :key="i">
+                        <span v-text="line.text" :style="line.style"></span><br>
+                      </div>
+                      <div id="consolebacklast"></div>
+                      <br><br>
+                    </v-card>
+                  </v-col>
+                </v-row>
+              </v-container>
+            </v-tab-item>
+
+            <v-tab-item>
+              <v-container fluid>
+                <v-row>
+                  <v-col>
+                    <span class="text-h6 font-weight-bold">
+                      アプリ操作ログ
+                    </span>
+                    <v-btn icon @click="getOpLog">
+                      <v-icon>
+                        mdi-reload
+                      </v-icon>
+                    </v-btn>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <v-data-table
+                      :items="oplogs"
+                      :headers="oplogHeaders"
+                      :sort-by="['createdAt']"
+                      :sort-desc="true"
+                    ></v-data-table>
+                  </v-col>
+                </v-row>
+              </v-container>
+            </v-tab-item>
+
+            <v-tab-item>
+              <v-container fluid>
+                <v-row>
+                  <v-col>
+                    <span class="text-h6 font-weight-bold">
+                      アプリエラーログ
+                    </span>
+                    <v-btn icon @click="getErLog">
+                      <v-icon>
+                        mdi-reload
+                      </v-icon>
+                    </v-btn>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <v-data-table
+                      :items="erlogs"
+                      :headers="erlogHeaders"
+                      :sort-by="['createdAt']"
+                      :sort-desc="true"
+                    ></v-data-table>
+                  </v-col>
+                </v-row>
+              </v-container>
+            </v-tab-item>
+
+            <v-tab-item>
+              <v-container fluid>
+                <v-row>
+                  <v-col cols="12" sm="6" md="6" lg="3" xl="3">
+                    <v-checkbox v-model="notiIsImportant" label="重要フラグ"></v-checkbox>
+                  </v-col>
+                  <v-col cols="12" sm="6" md="6" lg="3" xl="3">
+                    <v-text-field v-model="notiContent" label="ログ内容"></v-text-field>
+                  </v-col>
+                  <v-col cols="12" sm="6" md="6" lg="3" xl="3">
+                    <v-text-field v-model="notiUrl" label="URL"></v-text-field>
+                  </v-col>
+                  <v-col cols="12" sm="6" md="6" lg="3" xl="3">
+                    <v-text-field v-model="notiCreatedAt" type="datetime-local"></v-text-field>
+                  </v-col>
+                  <v-col cols="12" sm="6" md="6" lg="3" xl="3">
+                    <v-btn @click="postNotification">配信</v-btn>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <v-divider></v-divider>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <span class="text-h6 font-weight-bold">
+                      通知
+                    </span>
+                    <v-btn icon @click="getNotifications">
+                      <v-icon>
+                        mdi-reload
+                      </v-icon>
+                    </v-btn>
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col>
+                    <v-data-table
+                      :items="notifications"
+                      :headers="notificationHeaders"
+                      :sort-by="['createdAt']"
+                      :sort-desc="true"
+                    >
+                      <template v-slot:item.display="{ index }">
+                        <v-btn v-if="notifications[index].isDeleted" @click="updateNotification(index, false)" icon>
+                          <v-icon>
+                            mdi-eye-off
+                          </v-icon>
+                        </v-btn>
+                        <v-btn v-else @click="updateNotification(index, true)" icon>
+                          <v-icon>
+                            mdi-eye
+                          </v-icon>
+                        </v-btn>
+                      </template>
+                      <template v-slot:item.action="{ index }">
+                        <v-btn @click="deleteNotification(index)" icon>
+                          <v-icon>
+                            mdi-close
+                          </v-icon>
+                        </v-btn>
+                      </template>
+                    </v-data-table>
+                  </v-col>
+                </v-row>
+              </v-container>
+            </v-tab-item>
+
+          </v-tabs-items>
+        </v-card>
+      </v-container></v-main></v-app>
+    </div>
+
+    <!-- 通信用のaxios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <!-- vueおよびvuetify -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    
+    <!-- カレンダー-->
+    <script src='https://unpkg.com/v-calendar'></script>
+
+    <script>
+      new Vue({
+        el: '#app',
+        vuetify: new Vuetify(),
+        data: {
+          baseUrl: '{{ .EnvAuthBaseUri }}',
+          managerBuild: '{{ .EnvManagerBuild }}',
+          frontBuild: '{{ .EnvFrontBuild }}',
+          backBuild: '{{ .EnvBackBuild }}',
+          consoleArray: [],
+          ignoreMonitoring: true,
+          frontStatus: 'none',
+          backStatus: 'none',
+          disabled: false,
+          tab: 0,
+          tick: 0,
+          building: false,
+          stUsed: 0,
+          stTotal: 0,
+          stRate: 0,
+          memUsed: 0,
+          memTotal: 0,
+          memRate: 0,
+          logSel: 0,
+          logItems: [],
+          logConsole: [],
+          logCreatedAt: '',
+          headers: [],
+          oplogs: [],
+          erlogs: [],
+          notiContent: '',
+          notiUrl: '',
+          notiCreatedAt: '',
+          notiIsImportant: false,
+          notifications: [],
+          oplogHeaders: [
+            {
+              text: 'ユーザーID',
+              value: 'userId'
+            },
+            {
+              text: '名前',
+              value: 'name'
+            },
+            {
+              text: 'Twitter',
+              value: 'twitterName'
+            },
+            {
+              text: 'IPアドレス',
+              value: 'ipAddress'
+            },
+            {
+              text: '操作',
+              value: 'operation'
+            },
+            {
+              text: '内容',
+              value: 'descriptions'
+            },
+            {
+              text: '日時',
+              value: 'createdAt'
+            }
+          ],
+          erlogHeaders: [
+            {
+              text: 'ユーザーID',
+              value: 'userId'
+            },
+            {
+              text: 'IPアドレス',
+              value: 'ipAddress'
+            },
+            {
+              text: '操作',
+              value: 'operation'
+            },
+            {
+              text: 'エラーID',
+              value: 'errorId'
+            },
+            {
+              text: '内容',
+              value: 'descriptions'
+            },
+            {
+              text: 'ユーザー名',
+              value: 'name'
+            },
+            {
+              text: 'Twitter名',
+              value: 'twitterName'
+            },
+            {
+              text: '日時',
+              value: 'createdAt'
+            }
+          ],
+          notificationHeaders: [
+            {
+              text: 'ID',
+              value: 'id'
+            },
+            {
+              text: '内容',
+              value: 'content'
+            },
+            {
+              text: '重要',
+              value: 'isImportant'
+            },
+            {
+              text: 'URL',
+              value: 'url'
+            },
+            {
+              text: '日時',
+              value: 'createdAt'
+            },
+            {
+              text: '表示',
+              value: 'display'
+            },
+            {
+              text: '削除',
+              value: 'action'
+            }
+          ]
+        },
+        computed: {
+          token () {
+            return sessionStorage.getItem('token')
+          },
+          config () {
+            return {
+              headers: {
+                Authorization: `Bearer ${sessionStorage.getItem('token')}`
+              }
+            }
+          }
+        },
+        methods: {
+          writeConsole (text, color) {
+            this.consoleArray.push({
+              style: `color: ${color};`,
+              text: `${text}`
+            })
+            var element = document.getElementById('consoleback')
+            document.getElementById('consoleback').scrollBy(0,
+              document.getElementById(`consolebacklast`).getBoundingClientRect().y -
+              document.getElementById('consoleback').getBoundingClientRect().y
+            )
+          },
+          getStatusFront (finallyCallback) {
+            const data = this
+            if (!data.ignoreMonitoring) {
+              data.writeConsole('> GET /front/status', 'white')
+            }
+            axios.get(`${data.baseUrl}/front/status`, data.config).then(function (res) {
+              data.frontStatus = res.data.message.includes('Active: active (running)') ? 'active' : 'dead'
+              if (!data.ignoreMonitoring) {
+                data.writeConsole(`  Status code: ${res.status}`, 'green')
+                data.writeConsole(res.data.message, 'green')
+              }
+            }).catch(function (e) {
+              data.frontStatus = 'none'
+              if (!data.ignoreMonitoring) {
+                data.writeConsole(`  Status code: ${e.response.status}`, 'red')
+                data.writeConsole(e.response.data.message, 'red')
+              }
+            }).finally(function () {
+              if (finallyCallback) {
+                finallyCallback()
+              }
+            })
+          },
+          getStatusBack (finallyCallback) {
+            const data = this
+            if (!data.ignoreMonitoring) {
+              data.writeConsole('> GET /back/status', 'white')
+            }
+            axios.get(`${data.baseUrl}/back/status`, data.config).then(function (res) {
+              data.backStatus = res.data.message.includes('Active: active (running)') ? 'active' : 'dead'
+              if (!data.ignoreMonitoring) {
+                data.writeConsole(`  Status code: ${res.status}`, 'green')
+                data.writeConsole(res.data.message, 'green')
+              }
+            }).catch(function (e) {
+              data.backStatus = 'none'
+              if (!data.ignoreMonitoring) {
+                data.writeConsole(`  Status code: ${e.response.status}`, 'red')
+                data.writeConsole(e.response.data.message, 'red')
+              }
+            }).finally(function () {
+              if (finallyCallback) {
+                finallyCallback()
+              }
+            })
+          },
+          logout () {
+            const data = this
+            axios.delete(`${data.baseUrl}/auth/token`, data.config).finally(function () {
+              sessionStorage.setItem('token', '')
+              window.location.href = './login.html'
+            })
+          },
+          writePromiseBack (p) {
+            const data = this
+            p.then(function (res) {
+              data.writeConsole(`  Status code: ${res.status}`, 'green')
+              data.writeConsole(res.data.message, 'green')
+            }).catch(function (e) {
+              data.writeConsole(`  Status code: ${e.response.status}`, 'red')
+              data.writeConsole(e.response.data.message, 'red')
+            }).finally(function () {
+              data.getStatusBack(function () {
+                data.disabled = false
+              })
+            })
+          },
+          writePromiseFront (p) {
+            const data = this
+            p.then(function (res) {
+              data.writeConsole(`  Status code: ${res.status}`, 'green')
+              data.writeConsole(res.data.message, 'green')
+            }).catch(function (e) {
+              data.writeConsole(`  Status code: ${e.response.status}`, 'red')
+              data.writeConsole(e.response.data.message, 'red')
+            }).finally(function () {
+              data.getStatusFront(function () {
+                data.disabled = false
+              })
+            })
+          },
+          prompt (successCallback, failedCallback) {
+            const code = Math.floor(Math.random() * 1000000).toString()
+            const input = window.prompt(`操作を確定するにはコード'${code}'を入力してください`, "")
+            if (code == input) {
+              if (successCallback) {
+                successCallback()
+              }
+            } else {
+              if (failedCallback) {
+                failedCallback()
+              }
+            }
+          },
+          buildFront () {
+            const data = this
+            data.prompt(function () {
+              data.disabled = true
+              const p = axios.post(`${data.baseUrl}/front/build`, undefined, data.config)
+              data.writeConsole('> POST /front/build', 'white')
+              data.writePromiseFront(p)
+            })
+          },
+          startFront () {
+            const data = this
+            data.disabled = true
+            const p = axios.post(`${data.baseUrl}/front/start`, undefined, data.config)
+            data.writeConsole('> POST /front/start', 'white')
+            data.writePromiseFront(p)
+          },
+          stopFront () {
+            const data = this
+            data.prompt(function () {
+              data.disabled = true
+              const p = axios.delete(`${data.baseUrl}/front/stop`, data.config)
+              data.writeConsole('> DELETE /front/stop', 'white')
+              data.writePromiseFront(p)
+            }, function () {
+              alert('コードが正しくありません')
+            })
+          },
+          buildBack () {
+            const data = this
+            data.prompt(function () {
+              data.disabled = true
+              const p = axios.post(`${data.baseUrl}/back/build`, undefined, data.config)
+              data.writeConsole('> POST /back/build', 'white')
+              data.writePromiseBack(p)
+            })
+          },
+          startBack () {
+            const data = this
+            data.disabled = true
+            const p = axios.post(`${data.baseUrl}/back/start`, undefined, data.config)
+            data.writeConsole('> POST /back/start', 'white')
+            data.writePromiseBack(p)
+          },
+          stopBack () {
+            const data = this
+            data.prompt(function () {
+              data.disabled = true
+              const p = axios.delete(`${data.baseUrl}/back/stop`, data.config)
+              data.writeConsole('> DELETE /back/stop', 'white')
+              data.writePromiseBack(p)
+            }, function () {
+              alert('コードが正しくありません')
+            })
+          },
+          pull () {
+            const data = this
+            data.prompt(function () {
+              data.disabled = true
+              const p = axios.patch(`${data.baseUrl}/git/pull`, undefined, data.config)
+              data.writeConsole('> PATCH /git/pull', 'white')
+              data.writePromiseBack(p)
+            })
+          },
+          getInfo () {
+            const data = this
+            axios.get(`${data.baseUrl}/server/info`, data.config).then(function (res) {
+              data.memTotal = Math.round(res.data.memory.total / 1000 / 100) / 10
+              data.memUsed = Math.round(res.data.memory.used / 1000 / 100) / 10
+              data.memRate = Math.round(data.memUsed / data.memTotal * 1000) / 10
+              data.stTotal = Math.round(res.data.storage.total / 1000 / 1000 / 100) / 10
+              data.stUsed = Math.round(res.data.storage.used / 1000 / 1000 / 100) / 10
+              data.stRate = Math.round(data.stUsed / data.stTotal * 1000) / 10
+              data.building = res.data.building
+            }).catch(function () {
+              data.memTotal = 0
+              data.memUsed = 0
+              data.memRate = 0
+              data.stTotal = 0
+              data.stUsed = 0
+              data.stRate = 0
+              data.building = false
+            })
+          },
+          getLog (name) {
+            const data = this
+            axios.get(`${data.baseUrl}/server/log/${name}`, data.config).then(function (res) {
+              res.data.split('\n').forEach(function (text) {
+                data.logConsole.push({
+                  style: 'color: black;',
+                  text: text
+                })
+              })
+            }).catch(function (e) {
+              if (e.response.status == 404) {
+                data.logConsole.push({
+                  style: 'color: red;',
+                  text: 'ログが存在しません'
+                })
+              } else {
+                data.logConsole.push({
+                  style: 'color: red;',
+                  text: 'ログが取得できません'
+                })
+              }
+            })
+          },
+          clickGetLog () {
+            this.logConsole.splice(0)
+            this.getLog(this.logSel)
+          },
+          dateStrToStr (str) {
+            let date = new Date(str)
+
+            const yr = ('0000' + date.getFullYear()).slice(-4)
+            const mo = ('00' + (date.getMonth() + 1)).slice(-2)
+            const dy = ('00' + date.getDate()).slice(-2)
+            const hr = ('00' + date.getHours()).slice(-2)
+            const mi = ('00' + date.getMinutes()).slice(-2)
+            const sc = ('00' + date.getSeconds()).slice(-2)
+
+            return `${yr}年${mo}月${dy}日 ${hr}時${mi}分${sc}秒`
+          },
+          getOpLog () {
+            const data = this
+            data.oplogs.splice(0)
+            axios.get(`${data.baseUrl}/db/logs`, data.config).then(function (res) {
+              data.oplogs = res.data ? res.data : []
+              data.oplogs.forEach(function (v) {
+                v.createdAt = data.dateStrToStr(v.createdAt)
+              })
+            }).catch(function (e) {
+              data.oplogs.splice(0)
+            })
+          },
+          getErLog () {
+            const data = this
+            data.erlogs.splice(0)
+            axios.get(`${data.baseUrl}/db/error-logs`, data.config).then(function (res) {
+              data.erlogs = res.data ? res.data : []
+              data.erlogs.forEach(function (v) {
+                v.createdAt = data.dateStrToStr(v.createdAt)
+              })
+            }).catch(function (e) {
+              data.erlogs.splice(0)
+            })
+          },
+          dateToStringUtc (inputDate) {
+            const date = inputDate
+            let y = ('0000' + date.getUTCFullYear()).slice(-4)
+            let m = ('00' + (date.getUTCMonth() + 1)).slice(-2)
+            let d = ('00' + date.getUTCDate()).slice(-2)
+            let h = ('00' + date.getUTCHours()).slice(-2)
+            let mi = ('00' + date.getUTCMinutes()).slice(-2)
+            let s = ('00' + date.getUTCSeconds()).slice(-2)
+            return `${y}-${m}-${d}T${h}:${mi}:${s}Z`
+          },
+          getNotifications () {
+            const data = this
+            data.notifications.splice(0)
+            axios.get(`${data.baseUrl}/db/notifications`, data.config).then(function (res) {
+              data.notifications = res.data ? res.data : []
+              data.notifications.forEach(function (v) {
+                v.createdAt = data.dateStrToStr(v.createdAt)
+              })
+            }).catch(function (e) {
+              data.notifications.splice(0)
+            })
+          },
+          postNotification () {
+            const data = this
+            let date = ''
+            if (data.notiCreatedAt !== '') {
+              date = data.dateToStringUtc(new Date(data.notiCreatedAt))
+            }
+            const yesno = confirm('通知を送信しますか？')
+
+            if (yesno) {
+              axios.post(`${data.baseUrl}/db/notification`, {
+                content: data.notiContent,
+                isImportant: data.notiIsImportant,
+                url: data.notiUrl,
+                createdAt: date,
+              }, data.config).then(() => {
+                data.getNotifications()
+              }).catch((e) => {
+                alert(e.response.data)
+                console.log(e.response.data.message)
+              })
+            }
+          },
+          deleteNotification (index) {
+            const data = this
+            let date = ''
+            const yesno = confirm(`ID:${data.notifications[index].id}の通知を削除しますか？\n\n${data.notifications[index].content}`)
+
+            if (yesno) {
+              axios.delete(`${data.baseUrl}/db/notification/${data.notifications[index].id}`, data.config).then(() => {
+                data.getNotifications()
+              }).catch((e) => {
+                alert(e.response.data)
+                console.log(e.response.data.message)
+              })
+            }
+          },
+          updateNotification (index, isDeleted) {
+            const data = this
+            let date = ''
+            const yesno = confirm(`ID:${data.notifications[index].id}の通知を${isDeleted ? '表示' : '非表示'}にしますか？\n\n${data.notifications[index].content}`)
+
+            if (yesno) {
+              axios.patch(`${data.baseUrl}/db/notification/${data.notifications[index].id}`, {
+                isDeleted: isDeleted
+              }, data.config).then(() => {
+                data.getNotifications()
+              }).catch((e) => {
+                alert(e.response.data.message)
+                console.log(e.response.data)
+              })
+            }
+          }
+        },
+        mounted () {
+          const data = this
+
+          if (!sessionStorage.getItem('token')) {
+            // トークンがなければ1にリダイレクト
+            window.location.href = './login.html'
+          } else {
+            axios.get(`${data.baseUrl}/auth/check-token`, data.config).catch(function () {
+              sessionStorage.setItem('token', '')
+              window.location.href = './login.html'
+            })
+          }
+
+          // サーバー情報を取得
+          data.getInfo()
+          setInterval(function () {
+            data.getInfo()
+          }, 10000)
+
+          // ログを用意
+          const now = new Date()
+          for (let i=0;i<30;i++) {
+            data.logItems.push(`${now.getFullYear()}-${('00' + (now.getMonth() + 1)).slice(-2)}-${('00' + (now.getDate())).slice(-2)}`)
+            now.setDate(now.getDate() - 1)
+          }
+          data.logSel = data.logItems[0]
+          data.getLog(data.logSel)
+          
+          data.getStatusBack()
+          data.getStatusFront()
+          
+          setInterval(function () {
+            if (!data.disabled) {
+              if (data.tick % 2 == 0) {
+                data.getStatusBack()
+              } else {
+                data.getStatusFront()
+              }
+              data.tick++
+            }
+          }, 2500)
+
+          data.getOpLog()
+          data.getErLog()
+          data.getNotifications()
+        }
+      })
+
+    </script>
+  </body>
+</html>
+{{end}}

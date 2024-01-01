@@ -1,0 +1,27 @@
+set GIT_REMOTE_BRANCH=develop
+set GIT_LOCAL_BRANCH=develop
+set MANAGER_LISTENER_PORT=8290
+set MANAGER_BASE_URI=http://localhost:8290
+set MANAGER_HOOK_SECRET=token
+set MANAGER_GOOS=linux
+set MANAGER_GOARCH=amd64
+set MANAGER_BUILD=RELEASE
+set MANAGER_BUILD_BACK=RELEASE
+set MANAGER_BUILD_FRONT=RELEASE
+set MANAGER_WEBHOOK_TIME=1440
+
+set BACK_DB_HOST=192.168.2.32
+set BACK_DB_PORT=8220
+set BACK_DB_NAME=reviewmakerdb
+set BACK_DB_USER=postgresuser
+set BACK_DB_PASSWORD=PoStGres1
+set BACK_DB_TIMEZONE=Asia/Tokyo
+
+set SMTP_USER=hoppingganonapp@gmail.com
+set SMTP_PASSWORD=kqmttzmdxlkvqjtm
+set SMTP_FROM_ADDRESS=hoppingganonapp@gmail.com
+set SMTP_TO_ADDRESS=the.chickens.jl24@gmail.com
+
+set MANAGER_HOOK_SECRET=NvnK.qCk4MAPQnHxDH_M0XUoa-mD8Yf8b5Z8MH+/_Vq_cIqUg0ZTh8JbmbPoGcXoO
+
+go run .

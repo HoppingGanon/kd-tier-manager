@@ -1,0 +1,96 @@
+{{define "onetime"}}
+<html>
+  <head>
+    <title>
+      TierReviews 二段階認証
+    </title>
+
+    <!-- vueおよびvuetify-->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+  
+  </head>
+  <body>
+    <div id="app"><v-app><v-main>
+      <v-container class="d-flex justify-center">
+        <v-card max-width="480px">
+          <v-toolbar dark color="green">
+            <v-card-title class="font-weight-bold">TierReviews管理コンソール 二段階認証</v-card-title>
+          </v-toolbar>
+          <v-card-text>
+            送信されたメールに記載されたワンタイムパスワードを入力してください。
+          </v-card-text>
+          <v-container class="mt-5">
+            <v-row dense>
+              <v-col cols="6">
+                <div class="pt-1">ワンタイムパスワード</div>
+              </v-col>
+              <v-col>
+                <v-text-field v-model="oneTime" :disable="disabled" type="password" dense></v-text-field>
+              </v-col>
+            </v-row>
+            <v-row v-if="errorMessage" dense>
+              <v-col class="red--text">
+                <span v-text="errorMessage"></span>
+              </v-col>
+            </v-row>
+          </v-container>
+          <v-card-actions class="d-flex justify-end">
+            <v-btn dark color="green" @click="submit" :disable="disabled">送信</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-container></v-main></v-app>
+    </div>
+
+    <!-- 通信用のaxios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <!-- vueおよびvuetify -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+
+    <script>
+      new Vue({
+        el: '#app',
+        vuetify: new Vuetify(),
+        data: {
+          oneTime: '',
+          errorMessage: '',
+          disabled: false,
+          baseUrl: '{{ .EnvAuthBaseUri }}'
+        },
+        methods: {
+          submit () {
+            const data = this
+            if (data.disabled == false) {
+              data.disabled = true
+              axios.post(`${data.baseUrl}/auth/token`, {
+                tempToken: sessionStorage.getItem('tempToken'),
+                oneTime: data.oneTime
+              }).then(function (r) {
+                // 一時トークンの初期化
+                sessionStorage.setItem('tempToken', '')
+                sessionStorage.setItem('token', r.data)
+                window.location.href = './menu.html'
+              }).catch(function (e) {
+                data.errorMessage = e.response.data
+              }).finally(function () {
+                data.disabled = false
+              })
+            }
+          }
+        },
+        mounted () {
+          if (!sessionStorage.getItem('tempToken')) {
+            // トークンがなければ1にリダイレクト
+            window.location.href = './login.html'
+          }
+        }
+      })
+
+    </script>
+  </body>
+</html>
+{{end}}
